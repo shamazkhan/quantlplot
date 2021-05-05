@@ -5,7 +5,6 @@ optionated with good defaults, so you can start doing your work without having t
 autoscaling, keybindings, handle panning+vertical zooming (which all non-finance libraries have problems with).
 And best of all: it can show hundreds of thousands of datapoints without batting an eye.
 
-<img src="https://badge.fury.io/py/finplot.svg"/> <img src="https://pepy.tech/badge/finplot/month"/> <img src="https://img.shields.io/badge/License-MIT-yellow.svg"/>
 
 
 ## Features
@@ -22,7 +21,7 @@ And best of all: it can show hundreds of thousands of datapoints without batting
 ## Easy installation
 
 ```bash
-$ pip install finplot
+$ pip install quantlplot
 ```
 
 
