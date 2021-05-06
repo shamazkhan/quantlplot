@@ -13,7 +13,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/shamazkhan/quantlplot',
-    packages=['quantl'],
+    packages=['quantlplot'],
     install_requires=['pandas', 'PyQt5', 'pyqtgraph>=0.11.1'],
     classifiers=[
         'Programming Language :: Python :: 3',
