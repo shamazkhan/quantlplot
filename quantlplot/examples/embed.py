@@ -1,15 +1,15 @@
-#!/usr/bin/env python3
-
 import quantlplot as qplt
 from functools import lru_cache
 from PyQt5.QtWidgets import QApplication, QGridLayout, QGraphicsView, QComboBox, QLabel
 from threading import Thread
 import yfinance as yf
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 app = QApplication([])
 win = QGraphicsView()
-win.setWindowTitle('TradingView wannabe')
+win.setWindowTitle('Quantl AI Technical Analysis')
 layout = QGridLayout()
 win.setLayout(layout)
 win.resize(600, 500)
