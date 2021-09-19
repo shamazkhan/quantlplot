@@ -1,11 +1,61 @@
-#!/usr/bin/env python3
-
 import quantlplot as qplt
 from functools import lru_cache
 from PyQt5.QtWidgets import QApplication, QGridLayout, QMainWindow, QGraphicsView, QComboBox, QLabel
 from pyqtgraph.dockarea import DockArea, Dock
 from threading import Thread
-import yfinance as yf
+from pymongo import MongoClient
+from collections import defaultdict
+import pandas as pd
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+def _connect_mongo(host, port, username, password, db):
+    '''function to establish a connection with MongoDB'''
+    if username and password:
+        mongo_uri = "mongodb+srv://skhan:A330airbus@cluster0.f4uut.mongodb.net/POLYGON_STOCKS_EOD?retryWrites=true&w=majority"
+        conn = MongoClient(mongo_uri)
+    else:
+        ''' Change this part of code when MongoDB is deployed as a Service. Host/Port configuration is defined in 
+        <config> file. Until than keep it as it is. However this isnt the most efficient way to do this. 
+        '''
+
+        #conn = MongoClient(host, port)
+        mongo_uri = "mongodb+srv://skhan:A330airbus@cluster0.f4uut.mongodb.net/POLYGON_STOCKS_EOD?retryWrites=true&w=majority"
+        conn = MongoClient(mongo_uri)
+
+    return conn[db]
+
+
+
+def read_mongo(db, collection, query={}, host='localhost', port=27017, username='skhan', password='A330airbus', no_id=True):
+    """ Read from Mongo and Store into DataFrame """
+
+    # Connect to MongoDB
+    db = _connect_mongo(host=host, port=port, username=username, password=password, db=db)
+
+    # Make a query to the specific DB and Collection
+    cursor = db[collection].find(query)
+
+    # Expand the cursor and construct the DataFrame
+    imported_data = list(cursor)
+    df = pd.DataFrame(imported_data)
+
+    # Delete the _id
+    if no_id:
+        del df['_id']
+
+    '''MongoDB Cursor had whitespaces in Colums, hence we must rename them TO BE FIXED LATER'''
+    df = df.rename(columns={'  Date': 'Date', '  Open': 'Open', '  High': 'High', '  Low': 'Low', '  Close': 'Close',
+                            '  Volume': 'Volume'})
+    df = df.astype({'Date': 'datetime64[ns]'})
+    df['time'] =df['Date']
+    df.set_index('Date', inplace=True)
+
+    print(df)
+    return df
+
+
+
 
 app = QApplication([])
 win = QMainWindow()
@@ -28,13 +78,14 @@ area.addDock(dock_2)
 # Create example charts
 combo = QComboBox()
 combo.setEditable(True)
-[combo.addItem(i) for i in "AMRK FB GFN REVG TSLA TWTR WMT CT=F GC=F ^FTSE ^N225 EURUSD=X ETH-USD".split()]
+[combo.addItem(i) for i in 'AAPL SHOP ZI'.split()]
 dock_0.addWidget(combo, 0, 0, 1, 1)
 info = QLabel()
 dock_0.addWidget(info, 0, 1, 1, 1)
 
 # Chart for dock_0
 ax0,ax1,ax2 = qplt.create_plot_widget(master=area, rows=3, init_zoom_periods=100)
+
 area.axs = [ax0, ax1, ax2]
 dock_0.addWidget(ax0.ax_widget, 1, 0, 1, 2)
 dock_1.addWidget(ax1.ax_widget, 1, 0, 1, 2)
@@ -43,22 +94,23 @@ dock_2.addWidget(ax2.ax_widget, 1, 0, 1, 2)
 # Link x-axis
 ax1.setXLink(ax0)
 ax2.setXLink(ax0)
-win.axs = [ax0]
+win.axs = [ax0] # quantlplot requres this property
+ax2 = ax0.overlay()
 
-@lru_cache(maxsize = 15)
+@lru_cache(maxsize=15)
 def download(symbol):
-    return yf.download(symbol, "2019-01-01")
+    return read_mongo('POLYGON_STOCKS_EOD',symbol)
 
-@lru_cache(maxsize = 100)
+#@lru_cache(maxsize=100)
 def get_name(symbol):
-    return yf.Ticker(symbol).info ["shortName"]
-
+    return read_mongo('POLYGON_STOCKS_EOD',symbol)
 plots = []
+
 def update(txt):
     df = download(txt)
     if len(df) < 20: # symbol does not exist
         return
-    info.setText("Loading symbol name...")
+    #info.setText("Loading symbol name...")
     price = df ["Open Close High Low".split()]
     ma20 = df.Close.rolling(20).mean()
     ma50 = df.Close.rolling(50).mean()
